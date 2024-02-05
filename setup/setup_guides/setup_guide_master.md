@@ -12,15 +12,15 @@ Open a terminal window and print
 $ hostname  (without the $. It is for illustration purposes :)
 
 
-1.b) Set Host Name and update hosts file if you need it
-Login to each node (master & woker nodes) and set their hostname using hostnamectl command.
+1.b) If you think you need to change the hostname, this is how to do it
+Open a terminal window
+Become root 
+$ su -
 
-$ sudo hostnamectl set-hostname "k8s-master.linuxtechi.local"      // Run on master node
-$ sudo hostnamectl set-hostname "k8s-worker01.linuxtechi.local"    // Run on 1st worker node
-$ sudo hostnamectl set-hostname "k8s-worker02.linuxtechi.local"    // Run on 2nd worker node
-Also add the following entries in /etc/hosts file on all the nodes,
+$ hostnamectl set-hostname "k8-master-1"    //this is an example hostname. Set whatever suit your needs
 
-192.168.1.23   k8s-master.linuxtechi.local     k8s-master
-192.168.1.24   k8s-worker01.linuxtechi.local   k8s-worker01
-192.168.1.25   k8s-worker02.linuxtechi.local   k8s-worker02
+Add the following entries in /etc/hosts
 
+$ nano /etc/hosts
+
+your_ip_adress   k8-master-1     k8s-master1
