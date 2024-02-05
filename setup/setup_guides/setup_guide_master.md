@@ -8,7 +8,7 @@ You can use the hostname(s) you have on your Debian server(s), or workstation(s)
 It is recommended that you use static IP addresses. An easy way to do this is to use your local DHCP and local DNS server (for many this will be their router).
 Some examples of how to do that will be linked here in a little bit of time :)
 
-1.1 How to find your hostname if you do not know it?
+1.1 How to find your hostname?
 Open a terminal window and print
 $ hostname  (without the $. It is for illustration purposes :)
 
