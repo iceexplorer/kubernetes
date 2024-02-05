@@ -13,12 +13,13 @@ Open a terminal window and print
 $ su -
 
 
-It is furthermore recommended to install some useful stuff like;  a complete list with an explanation of what it is
+It is furthermore recommended to install some useful stuff like; # a complete list with an explanation of what it is
 
 $ apt install nano fail2ban openssh-server
 
 $ systemctl start ssh
 
+# There will be some additions here like securing sshd a bit more and so on
 
 
 1. Hostnames
