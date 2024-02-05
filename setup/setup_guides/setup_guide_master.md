@@ -8,7 +8,7 @@ It is recommended to use the "super root" user if not stated otherwise.
 
 To become "super root", do this;
 
-Open a terminal window and print
+Open a terminal window and type;
 
 $ su -
 
@@ -30,23 +30,18 @@ Some examples of how to do that will be linked here in a little bit of time :)
 
 1.1 How to find your hostname?
 
-Open a terminal window and print
+Open a terminal window and type
 
 $ hostname           //without the $. It is for illustration purposes :)
 
 
 
-1.2 If you think you need to change the hostname, this is how to do it
-
-Open a terminal window
-Become root 
-$ su -
-
+1.2 If you think you need to change the hostname, this is how to do it;
 
 
 $ hostnamectl set-hostname "k8-master-1"    //this is an example hostname. Set whatever suits your needs
 
-Add the following entries in /etc/hosts
+Add the following entry in /etc/hosts    //optionally you may re-boot and it will be there automaticly
 
 $ nano /etc/hosts
 
