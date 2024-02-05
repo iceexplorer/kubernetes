@@ -3,7 +3,7 @@
 # DO NOT USE THIS GUIDE YET!
 Everything you will find here is a work in progress and has not been tested as of now
 
-# Prerqusits
+# Prerequisites
 It is recommended to use the "super root" user if not stated otherwise.
 
 To become "super root", do this;
