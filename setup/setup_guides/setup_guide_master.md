@@ -23,4 +23,4 @@ Add the following entries in /etc/hosts
 
 $ nano /etc/hosts
 
-your_ip_adress   k8-master-1     k8s-master1
+your_ip_adress   k8-master-1
