@@ -15,7 +15,7 @@ $ su -
 
 It is furthermore recommended to install some useful stuff like; # a complete list with an explanation of what it is
 
-$ apt install nano fail2ban openssh-server
+$ apt install nano fail2ban openssh-server ufw
 
 $ systemctl start ssh
 
