@@ -3,6 +3,22 @@
 # DO NOT USE THIS GUIDE YET!
 Everything you will find here is a work in progress and has not been tested as of now
 
+# Prerqusits
+It is recommended to use the "super root" user if not stated otherwise.
+
+To become "super root", do this;
+
+Open a terminal window and print
+
+$ su -
+
+
+It is furthermore recommended to install some useful stuff like;  a complete list with an explanation of what it is
+
+$ apt install nano fail2ban openssh-server /
+$ systemctl start ssh
+
+
 
 1. Hostnames
 You can use the hostname(s) you have on your Debian server(s), or workstation(s) acting as a server.
@@ -14,7 +30,7 @@ Some examples of how to do that will be linked here in a little bit of time :)
 
 Open a terminal window and print
 
-$ hostname  (without the $. It is for illustration purposes :)
+$ hostname           //without the $. It is for illustration purposes :)
 
 
 
