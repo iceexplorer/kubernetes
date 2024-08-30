@@ -36,12 +36,32 @@ apt install -y docker-ce docker-ce-cli containerd.io
 systemctl start docker
 systemctl enable docker
 
+# Prepare for containerd installation
+# Load necessary kernel modules
+cat <<EOF | tee /etc/modules-load.d/containerd.conf 
+overlay 
+br_netfilter
+EOF
+
+modprobe overlay && modprobe br_netfilter
+
+# Set system parameters
+cat <<EOF | tee /etc/sysctl.d/99-kubernetes-k8s.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1 
+net.bridge.bridge-nf-call-ip6tables = 1 
+EOF
+
+sysctl --system
+
 # Install containerd
 apt install -y containerd.io
 
 # Configure containerd
 mkdir -p /etc/containerd
 containerd config default > /etc/containerd/config.toml
+
+# Restart containerd service
 systemctl restart containerd
 
 # Add Kubernetes apt repository
