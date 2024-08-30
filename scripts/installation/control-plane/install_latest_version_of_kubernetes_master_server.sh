@@ -1,6 +1,20 @@
 #!/bin/bash
-#WARNING: This is the first version of this script. It has NOT BEEN TESTED, but made from momory and guides alone.
-#DO NOT use this script yet!
+
+# WARNING: This script has not been tested and is for TESTING PURPOSES ONLY!
+# Running this script could potentially modify your system configuration or install software.
+# Use at your own risk. Always review scripts before execution, especially in production environments.
+
+# Continue with setup only if the user agrees
+echo "WARNING: This script has not been tested and is for TESTING PURPOSES ONLY!"
+echo "Running this script could potentially modify your system configuration or install software."
+echo "Do you wish to continue? (y/n)"
+read -p "" -n 1 -r
+echo    # (optional) move to a new line
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    echo "Script execution cancelled."
+    exit 1
+fi
 
 # Update system and install necessary packages
 sudo apt update
