@@ -73,4 +73,62 @@ EOF
 
     # Add the GPG key for the repository if not already present
     if ! [ -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg ]; then
-        curl -fsSL "${RE
+        curl -fsSL "${REPO_URL}Release.key" | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    fi
+
+    # Update package lists after changing repo
+    apt update
+fi
+
+# Prompt user for upgrade type
+echo "Choose upgrade type:"
+echo "1. Upgrade to the latest patch version within $MINOR_VERSION"
+echo "2. Upgrade step-by-step"
+read -p "Enter your choice (1 or 2): " CHOICE
+
+case $CHOICE in
+    1)
+        # Upgrade to the latest version
+        echo "Upgrading to the latest version within ${MINOR_VERSION}..."
+        
+        # Unhold kubelet and kubectl to allow version update
+        apt-mark unhold kubelet kubectl
+
+        # Find the latest version available in the repository
+        LATEST_VERSION=$(apt list --upgradable 2>/dev/null | grep kubelet | awk -F'/' '{print $2}' | awk -F'-' '{print $1}' | sort -V | tail -n 1)
+
+        # Check if there's an update available
+        if [ -z "$LATEST_VERSION" ]; then
+            echo "No updates available for kubelet within version ${MINOR_VERSION}."
+            exit 0
+        fi
+
+        echo "Upgrading to the latest version within ${MINOR_VERSION}: $LATEST_VERSION"
+
+        # Upgrade kubelet and kubectl to the latest version
+        apt-get update && apt-get install -y kubelet="$LATEST_VERSION-00" kubectl="$LATEST_VERSION-00" && apt-mark hold kubelet kubectl
+        
+        # Restart kubelet
+        systemctl restart kubelet
+        
+        echo "Upgrade to $LATEST_VERSION completed."
+        ;;
+    
+    2)
+        # Step-by-step upgrade
+        echo "Starting step-by-step upgrade process. Run this script again for each step."
+        step_upgrade
+        ;;
+    
+    *)
+        echo "Invalid option. Please choose 1 or 2."
+        exit 1
+        ;;
+esac
+
+# Clean up
+echo "Cleaning up..."
+apt-get autoremove -y
+apt-get clean
+
+echo "Upgrade process completed. Note: This script used the recommended Kubernetes repository for ${MINOR_VERSION}."
