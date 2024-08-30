@@ -34,8 +34,8 @@ CURRENT_VERSION=$(kubeadm version -o short | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+
 echo "Current Kubernetes version: $CURRENT_VERSION"
 
 # Check if we're starting from the correct version
-if [[ "$CURRENT_VERSION" != "v1.28.9" ]]; then
-    echo "This script is designed to upgrade from v1.28.9. Current version is $CURRENT_VERSION."
+if [[ "$CURRENT_VERSION" != "1.29.8" ]]; then
+    echo "This script is designed to upgrade from v1.29.8. Current version is $CURRENT_VERSION."
     exit 1
 fi
 
