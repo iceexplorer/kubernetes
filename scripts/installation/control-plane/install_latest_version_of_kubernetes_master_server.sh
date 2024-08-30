@@ -70,9 +70,34 @@ echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
 # Configure iptables
 iptables -P FORWARD ACCEPT
 
+# Function to get the server's IP address
+get_server_ip() {
+    # This function tries to get the non-loopback IP address of the server
+    # Adjust based on your network setup if needed
+    local ip=$(ip route get 1 | awk '{print $NF; exit}')
+    
+    # If the above fails, fallback to other methods
+    if [ -z "$ip" ]; then
+        ip=$(hostname -I | awk '{print $1}')
+    fi
+    
+    # If still no IP, prompt user for input
+    if [ -z "$ip" ]; then
+        echo "Could not determine server IP automatically. Please enter the server's IP address:"
+        read -p "Server IP: " ip
+        if [ -z "$ip" ]; then
+            echo "No IP provided. Exiting."
+            exit 1
+        fi
+    fi
+    
+    echo "$ip"
+}
+
 # Initialize the Kubernetes cluster with the latest version
 # Note: The --pod-network-cidr might need adjustment based on your network setup
-kubeadm init --apiserver-advertise-address=192.168.1.100 --pod-network-cidr=10.244.0.0/16
+SERVER_IP=$(get_server_ip)
+kubeadm init --apiserver-advertise-address=$SERVER_IP --pod-network-cidr=10.244.0.0/16
 
 # Configure kubectl for the user
 mkdir -p $HOME/.kube
