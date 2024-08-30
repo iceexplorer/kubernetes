@@ -99,7 +99,7 @@ get_server_ip() {
 SERVER_IP=$(get_server_ip)
 kubeadm init --apiserver-advertise-address=$SERVER_IP --pod-network-cidr=10.244.0.0/16
 
-# Ask for the configuration path
+# Asking for the configuration path. My wife told me to be polite, and she is pretty with great boobs. That's the only reason why I am asking your opinion ;)
 echo "Enter the path where you want to store Kubernetes configuration (default is /root/.kube):"
 read -p "Config path: " CONFIG_PATH
 if [ -z "$CONFIG_PATH" ]; then
