@@ -73,27 +73,7 @@ EOF
 
     # Add the GPG key for the repository if not already present
     if ! [ -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg ]; then
-        curl -fsSL "${REPO_URL}Release.key" | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    fi
-
-    # Update package lists after changing repo
-    apt update
-fi
-
-# Prompt user for upgrade type
-echo "Choose upgrade type:"
-echo "1. Upgrade to the latest patch version within $MINOR_VERSION"
-echo "2. Upgrade step-by-step"
-read -p "Enter your choice (1 or 2): " CHOICE
-
-case $CHOICE in
-    1)
-        # Upgrade to the latest version
-        echo "Upgrading to the latest version within ${MINOR_VERSION}..."
-        
-        # Unhold kubelet and kubectl to allow version update
-        apt-mark unhold kubelet kubectl
-
+        curl -fsSL "${RE
         # Find the latest version available in the repository
         LATEST_VERSION=$(apt list --upgradable 2>/dev/null | grep kubelet | awk -F'/' '{print $2}' | awk -F'-' '{print $1}' | sort -V | tail -n 1)
 
