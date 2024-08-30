@@ -117,7 +117,29 @@ kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 kubectl taint nodes --all node-role.kubernetes.io/master-
 
 # Output join command for worker nodes
+JOIN_COMMAND=$(kubeadm token create --print-join-command)
+
 echo "Join command for worker nodes:"
-kubeadm token create --print-join-command
+echo "$JOIN_COMMAND"
+
+# Ask if user wants to save the join command and token to a file
+echo "WARNING: Saving the join token is not very safe. It's better to use it immediately and then discard it."
+echo "Do you want to save the join command and token to a file? (y/n)"
+read -p "" -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Ask for file location
+    echo "Enter the path where you want to save the join command (default is /root/join_command.sh):"
+    read -p "Save path: " SAVE_PATH
+    if [ -z "$SAVE_PATH" ]; then
+        SAVE_PATH="/root/join_command.sh"
+    fi
+
+    # Save join command to file
+    echo "$JOIN_COMMAND" > "$SAVE_PATH"
+    echo "Join command and token have been saved to $SAVE_PATH"
+else
+    echo "Join command and token were not saved to a file for security reasons."
+fi
 
 echo "Kubernetes control-plane setup with the latest version completed. You can now join worker nodes with the provided command."
