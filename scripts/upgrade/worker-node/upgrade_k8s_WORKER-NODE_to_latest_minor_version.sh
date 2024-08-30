@@ -18,7 +18,7 @@ get_repo_url() {
     grep -oP 'deb \K.*' /etc/apt/sources.list.d/kubernetes.list 2>/dev/null | head -n 1
 }
 
-# Function to perform a single step upgrade
+# Function to perform a single-step upgrade
 step_upgrade() {
     # Find the next version
     NEXT_VERSION=$(apt list --upgradable 2>/dev/null | grep kubelet | awk -F'/' '{print $2}' | awk -F'-' '{print $1}' | sort -V | tail -n 1)
@@ -29,7 +29,7 @@ step_upgrade() {
     fi
 
     echo "Upgrading to version $NEXT_VERSION..."
-    apt-get update && apt-get install -y kubelet="$NEXT_VERSION-00" kubectl="$NEXT_VERSION-00" && apt-mark hold kubelet kubectl
+    apt-get update && apt-get install -y kubelet="$NEXT_VERSION" kubectl="$NEXT_VERSION" && apt-mark hold kubelet kubectl
     
     # Restart kubelet
     systemctl restart kubelet
