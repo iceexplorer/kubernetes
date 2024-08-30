@@ -12,7 +12,7 @@ fi
 
 # Continue with setup only if the user agrees
 echo "WARNING: This script has not been tested and is for TESTING PURPOSES ONLY!"
-echo "Running this script could potentially modify your system configuration or install software."
+echo "Running this script WILL modify your system configuration, install a lot of software, and potentially fuck up your system."
 echo "Do you wish to continue? (y/n)"
 read -p "" -n 1 -r
 echo    # (optional) move to a new line
