@@ -57,7 +57,7 @@ apt-mark unhold kubelet kubectl
 
 # Upgrade kubelet and kubectl to the target version
 echo "Upgrading kubelet and kubectl to v1.31.0..."
-apt-get update && apt-get install -y kubelet='1.31.0-00' kubectl='1.31.0-00'
+apt-get update && apt-get install -y kubelet='1.31.0-*' kubectl='1.31.0-*'
 
 # Hold kubelet and kubectl at the new version
 echo "Holding kubelet and kubectl at version 1.31.0..."
