@@ -31,9 +31,6 @@ if ! command -v ufw &> /dev/null; then
     apt install -y ufw
 fi
 
-# Ensure UFW is running and enable it
-ufw --force enable
-
 # Open necessary ports
 ufw allow 22/tcp
 ufw allow 6443/tcp
@@ -41,6 +38,9 @@ ufw allow 10250/tcp
 ufw allow 10251/tcp
 ufw allow 10252/tcp
 ufw allow 30000:32767/tcp
+
+# Ensure UFW is running and enable it
+ufw --force enable
 
 # Add Docker repository and install Docker
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
