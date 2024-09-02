@@ -121,7 +121,7 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 apt update
 
 # Install the fixed stable versions of kubeadm, kubelet, and kubectl
-apt install -y kubeadm=1.31.0-00 kubelet=1.31.0-00 kubectl=1.31.0-00
+apt install -y kubeadm=1.31.0-00 kubelet=1.31.0-* kubectl=1.31.0-*
 
 # Hold Kubernetes packages to prevent auto-updates
 apt-mark hold kubeadm kubelet kubectl
