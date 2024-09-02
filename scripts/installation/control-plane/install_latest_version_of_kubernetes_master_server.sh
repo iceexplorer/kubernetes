@@ -16,7 +16,8 @@ echo "Running this script at this point WILL modify your system configuration, i
 echo "Do you wish to continue? (y/n)"
 read -p "" -n 1 -r
 echo    # (optional) move to a new line
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
     echo "Script execution cancelled."
     exit 1
 fi
@@ -24,23 +25,6 @@ fi
 # Update system and install necessary packages
 apt update
 apt install -y apt-transport-https ca-certificates curl
-
-# Check if ufw is installed, if not, install it
-if ! command -v ufw &> /dev/null; then
-    echo "UFW is not installed. Installing now..."
-    apt install -y ufw
-fi
-
-# Ensure UFW is running and enable it
-ufw --force enable
-
-# Open necessary ports
-ufw allow 22/tcp
-ufw allow 6443/tcp
-ufw allow 10250/tcp
-ufw allow 10251/tcp
-ufw allow 10252/tcp
-ufw allow 30000:32767/tcp
 
 # Add Docker repository and install Docker
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
@@ -80,27 +64,24 @@ containerd config default > /etc/containerd/config.toml
 # Restart containerd service
 systemctl restart containerd
 
+# Add Kubernetes apt repository
+curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+
+# Update package list to get the latest versions
+apt update
+
+# Install the latest stable versions of kubeadm, kubelet, and kubectl
+apt install -y kubeadm kubelet kubectl
+
+# Hold Kubernetes packages to prevent auto-updates
+apt-mark hold kubeadm kubelet kubectl
+
 # Disable swap
 swapoff -a
 
-# Set up hostname for the worker node
-# Get the current hostname
-CURRENT_HOSTNAME=$(hostname)
-
-# Display the current hostname
-echo "The current hostname of this server is: $CURRENT_HOSTNAME"
-echo "Do you want to use this hostname? (y/n)"
-read -p "" -n 1 -r
-echo    # (optional) move to a new line
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Enter a custom hostname for this worker node:"
-    read -p "Hostname: " WORKER_HOSTNAME
-else
-    WORKER_HOSTNAME=$CURRENT_HOSTNAME
-fi
-
-# Set the hostname
-hostnamectl set-hostname "$WORKER_HOSTNAME"
+# Set up hostname for the control plane
+hostnamectl set-hostname k8s-control-plane
 
 # Ensure net.bridge.bridge-nf-call-iptables is set to 1
 modprobe br_netfilter
@@ -108,23 +89,6 @@ echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
 
 # Configure iptables
 iptables -P FORWARD ACCEPT
-
-# Add Kubernetes repository
-echo "Adding Kubernetes repository..."
-# Ensure the keyring directory exists
-mkdir -p /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
-
-# Update package list to get the latest versions
-apt update
-
-# Install the fixed stable versions of kubeadm, kubelet, and kubectl
-apt install -y kubeadm=1.31.0-00 kubelet=1.31.0-* kubectl=1.31.0-*
-
-# Hold Kubernetes packages to prevent auto-updates
-apt-mark hold kubeadm kubelet kubectl
 
 # Function to get the server's IP address
 get_server_ip() {
@@ -150,12 +114,50 @@ get_server_ip() {
     echo "$ip"
 }
 
-# Ask for the join command
-echo "Enter the join command for this worker node:"
-read -p "Join command: " JOIN_COMMAND
+# Initialize the Kubernetes cluster with the latest version
+# Note: The --pod-network-cidr might need adjustment based on your network setup
+SERVER_IP=$(get_server_ip)
+kubeadm init --apiserver-advertise-address=$SERVER_IP --pod-network-cidr=10.244.0.0/16
 
-# Join the worker node to the cluster
-echo "Joining the worker node to the cluster..."
-$JOIN_COMMAND
+# Asking for the configuration path. My wife told me to be polite, and she is pretty with great boobs. That's the only reason why I am asking your opinion ;)
+echo "Enter the path where you want to store Kubernetes configuration (default is /root/.kube):"
+read -p "Config path: " CONFIG_PATH
+if [ -z "$CONFIG_PATH" ]; then
+    CONFIG_PATH="/root/.kube"
+fi
 
-echo "Worker node setup completed. The node should now be part of the Kubernetes cluster."
+# Configure kubectl for the user
+mkdir -p "$CONFIG_PATH"
+cp -i /etc/kubernetes/admin.conf "$CONFIG_PATH/config"
+
+# Install a CNI plugin (e.g., Calico)
+kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+# Remove the taint on the master node if you want to run pods on it
+kubectl taint nodes --all node-role.kubernetes.io/master-
+
+# Output join command for worker nodes
+JOIN_COMMAND=$(kubeadm token create --print-join-command)
+
+echo "Join command for worker nodes:"
+echo "$JOIN_COMMAND"
+
+# Ask if user wants to save the join command and token to a file
+echo "WARNING: Saving the join token is not very safe. It's better to use it immediately and then discard it."
+echo "Do you want to save the join command and token to a file? (y/n)"
+read -p "" -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Ask for file location
+    echo "Enter the path where you want to save the join command (default is /root/join_command.sh):"
+    read -p "Save path: " SAVE_PATH
+    if [ -z "$SAVE_PATH" ]; then
+        SAVE_PATH="/root/join_command.sh"
+    fi
+
+    # Save join command to file
+    echo "$JOIN_COMMAND" > "$SAVE_PATH"
+    echo "Join command and token have been saved to $SAVE_PATH"
+else
+    echo "Join command and token were not saved to a file for security reasons."
+fi
