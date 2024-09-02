@@ -68,4 +68,15 @@ else
     echo "/etc/kubernetes/scheduler.conf not found. Skipping."
 fi
 
-echo "Cleanup of unnecessary Kubernetes components completed and control-plane IP configuration updated."
+# Restart kubelet to pick up new configuration
+echo "Restarting kubelet to apply new configuration..."
+systemctl restart kubelet
+
+# Check if kubelet restarted successfully
+if systemctl is-active --quiet kubelet; then
+    echo "kubelet restarted successfully."
+else
+    echo "Warning: kubelet failed to restart. Check logs for more information."
+fi
+
+echo "Cleanup of unnecessary Kubernetes components completed, control-plane IP configuration updated, and kubelet restarted."
