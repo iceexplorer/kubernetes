@@ -109,6 +109,23 @@ echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
 # Configure iptables
 iptables -P FORWARD ACCEPT
 
+# Add Kubernetes repository
+echo "Adding Kubernetes repository..."
+# Ensure the keyring directory exists
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+
+# Update package list to get the latest versions
+apt update
+
+# Install the fixed stable versions of kubeadm, kubelet, and kubectl
+apt install -y kubeadm=1.31.0-00 kubelet=1.31.0-00 kubectl=1.31.0-00
+
+# Hold Kubernetes packages to prevent auto-updates
+apt-mark hold kubeadm kubelet kubectl
+
 # Function to get the server's IP address
 get_server_ip() {
     # This function tries to get the non-loopback IP address of the server
