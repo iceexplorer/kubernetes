@@ -73,38 +73,28 @@ EOF
 
     # Add the GPG key for the repository if not already present
     if ! [ -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg ]; then
-        curl -fsSL "${RE
-        # Find the latest version available in the repository
-        LATEST_VERSION=$(apt list --upgradable 2>/dev/null | grep kubelet | awk -F'/' '{print $2}' | awk -F'-' '{print $1}' | sort -V | tail -n 1)
+        curl -fsSL "${REPO_URL}/Release.key" | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    fi
+fi
 
-        # Check if there's an update available
-        if [ -z "$LATEST_VERSION" ]; then
-            echo "No updates available for kubelet within version ${MINOR_VERSION}."
-            exit 0
-        fi
+# Find the latest version available in the repository
+LATEST_VERSION=$(apt list --upgradable 2>/dev/null | grep kubelet | awk -F'/' '{print $2}' | awk -F'-' '{print $1}' | sort -V | tail -n 1)
 
-        echo "Upgrading to the latest version within ${MINOR_VERSION}: $LATEST_VERSION"
+# Check if there's an update available
+if [ -z "$LATEST_VERSION" ]; then
+    echo "No updates available for kubelet within version ${MINOR_VERSION}."
+    exit 0
+fi
 
-        # Upgrade kubelet and kubectl to the latest version
-        apt-get update && apt-get install -y kubelet="$LATEST_VERSION-*" kubectl="$LATEST_VERSION-*" && apt-mark hold kubelet kubectl
-        
-        # Restart kubelet
-        systemctl restart kubelet
-        
-        echo "Upgrade to $LATEST_VERSION completed."
-        ;;
-    
-    2)
-        # Step-by-step upgrade
-        echo "Starting step-by-step upgrade process. Run this script again for each step."
-        step_upgrade
-        ;;
-    
-    *)
-        echo "Invalid option. Please choose 1 or 2."
-        exit 1
-        ;;
-esac
+echo "Upgrading to the latest version within ${MINOR_VERSION}: $LATEST_VERSION"
+
+# Upgrade kubelet and kubectl to the latest version
+apt-get update && apt-get install -y kubelet="$LATEST_VERSION-*" kubectl="$LATEST_VERSION-*" && apt-mark hold kubelet kubectl
+
+# Restart kubelet
+systemctl restart kubelet
+
+echo "Upgrade to $LATEST_VERSION completed."
 
 # Clean up
 echo "Cleaning up..."
