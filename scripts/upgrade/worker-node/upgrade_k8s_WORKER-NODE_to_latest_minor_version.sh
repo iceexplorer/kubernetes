@@ -86,7 +86,7 @@ EOF
         echo "Upgrading to the latest version within ${MINOR_VERSION}: $LATEST_VERSION"
 
         # Upgrade kubelet and kubectl to the latest version
-        apt-get update && apt-get install -y kubelet="$LATEST_VERSION-00" kubectl="$LATEST_VERSION-00" && apt-mark hold kubelet kubectl
+        apt-get update && apt-get install -y kubelet="$LATEST_VERSION-*" kubectl="$LATEST_VERSION-*" && apt-mark hold kubelet kubectl
         
         # Restart kubelet
         systemctl restart kubelet
