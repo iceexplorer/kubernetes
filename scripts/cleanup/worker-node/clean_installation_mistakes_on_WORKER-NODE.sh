@@ -1,11 +1,19 @@
 #!/bin/bash
 
-# Script to remove unnecessary Kubernetes components from a worker node and ensure correct control-plane IP
-# This script is made to ensure that no mistakes has been done when experimenting with the setup og worker-nodes. Some manuals out there ask you to install a lot of control-plane functionality on a worker node
+# Script to manage Kubernetes components on a worker node, ensuring correct control-plane IP and handling package holds
 
 # Function to check if a package is installed
 package_installed() {
     dpkg -s "$1" > /dev/null 2>&1
+}
+
+# Function to check if a package is on hold
+package_on_hold() {
+    if apt-mark showhold | grep -q "$1"; then
+        return 0  # Package is on hold
+    else
+        return 1  # Package is not on hold
+    fi
 }
 
 # Ensure running as root
@@ -14,9 +22,29 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Update package lists
+echo "Updating package lists..."
+apt update
+
+# List of control-plane packages to potentially unhold
+control_plane_packages=(
+    kube-apiserver
+    kube-controller-manager
+    kube-scheduler
+    kubeadm  # Added kubeadm to the list
+)
+
+# Unhold control-plane packages if they are on hold
+for package in "${control_plane_packages[@]}"; do
+    if package_installed "$package" && package_on_hold "$package"; then
+        echo "Unholding $package..."
+        apt-mark unhold "$package"
+    fi
+done
+
 # List of packages to remove (kubectl is removed from this list)
 packages_to_remove=(
-    kubeadm
+    kubeadm  # Note: We're removing kubeadm but unholding it for control-plane use
     kubernetes-cni
     kube-apiserver
     kube-controller-manager
@@ -70,13 +98,3 @@ fi
 
 # Restart kubelet to pick up new configuration
 echo "Restarting kubelet to apply new configuration..."
-systemctl restart kubelet
-
-# Check if kubelet restarted successfully
-if systemctl is-active --quiet kubelet; then
-    echo "kubelet restarted successfully."
-else
-    echo "Warning: kubelet failed to restart. Check logs for more information."
-fi
-
-echo "Cleanup of unnecessary Kubernetes components completed, control-plane IP configuration updated, and kubelet restarted."
