@@ -69,7 +69,7 @@ kubeadm upgrade apply v1.30.4
 
 # Update kubectl and kubelet
 echo "Updating kubectl and kubelet..."
-apt-get install -y kubectl=1.30.4-00 kubelet=1.30.4-00
+apt-get install -y kubectl=1.30.4-* kubelet=1.30.4-*
 
 # Ensure kubelet restarts with new version
 systemctl restart kubelet
