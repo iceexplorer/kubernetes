@@ -84,10 +84,52 @@ containerd config default > /etc/containerd/config.toml
 # Restart containerd service
 systemctl restart containerd
 
+
+
+# Disable swap
+swapoff -a
+
+# Comment out the swap entry in /etc/fstab, but only if it's not already commented
+sed -i.bak '/^[^#].*\bswap\b/s/^/#/' /etc/fstab
+
+# Set up hostname for the worker node
+CURRENT_HOSTNAME=$(hostname)
+
+echo "The current hostname of this server is: $CURRENT_HOSTNAME"
+echo "Do you want to use this hostname? (y/n)"
+read -p "" -n 1 -r
+echo    # (optional) move to a new line
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Enter a custom hostname for this worker node:"
+    read -p "Hostname: " WORKER_HOSTNAME
+else
+    WORKER_HOSTNAME=$CURRENT_HOSTNAME
+fi
+
+hostnamectl set-hostname "$WORKER_HOSTNAME"
+
+# Ensure net.bridge.bridge-nf-call-iptables is set to 1
+modprobe br_netfilter
+echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+# Configure iptables
+iptables -P FORWARD ACCEPT
+
+# Add Kubernetes repository
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
+
+apt update
+
+# Install the stable versions of kubeadm, kubelet, and kubectl
+apt install -y kubeadm=1.31.0-* kubelet=1.31.0-* kubectl=1.31.0-*
+
+apt-mark hold kubeadm kubelet kubectl
+
 # Calico documentation link: https://docs.tigera.io/calico/latest/getting-started/kubernetes/hardway/install-cni-plugin
-#make install directories
-mkdir -p /opt/cni/bin/calico
-mkdir -p /opt/cni/bin/calico-ipam
+#make install directory
+mkdir -p /opt/cni/bin/
+
 
 # Install the CNI plugin binaries for Calico
 curl -L -o /opt/cni/bin/calico https://github.com/projectcalico/cni-plugin/releases/download/v3.25.0/calico-amd64
@@ -154,46 +196,6 @@ cat > /etc/cni/net.d/10-calico.conflist <<EOF
   ]
 }
 EOF
-
-# Disable swap
-swapoff -a
-
-# Comment out the swap entry in /etc/fstab, but only if it's not already commented
-sed -i.bak '/^[^#].*\bswap\b/s/^/#/' /etc/fstab
-
-# Set up hostname for the worker node
-CURRENT_HOSTNAME=$(hostname)
-
-echo "The current hostname of this server is: $CURRENT_HOSTNAME"
-echo "Do you want to use this hostname? (y/n)"
-read -p "" -n 1 -r
-echo    # (optional) move to a new line
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Enter a custom hostname for this worker node:"
-    read -p "Hostname: " WORKER_HOSTNAME
-else
-    WORKER_HOSTNAME=$CURRENT_HOSTNAME
-fi
-
-hostnamectl set-hostname "$WORKER_HOSTNAME"
-
-# Ensure net.bridge.bridge-nf-call-iptables is set to 1
-modprobe br_netfilter
-echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
-
-# Configure iptables
-iptables -P FORWARD ACCEPT
-
-# Add Kubernetes repository
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
-
-apt update
-
-# Install the stable versions of kubeadm, kubelet, and kubectl
-apt install -y kubeadm=1.31.0-* kubelet=1.31.0-* kubectl=1.31.0-*
-
-apt-mark hold kubeadm kubelet kubectl
 
 # Get the server's IP address
 get_server_ip() {
