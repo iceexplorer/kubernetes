@@ -85,6 +85,9 @@ containerd config default > /etc/containerd/config.toml
 systemctl restart containerd
 
 # Calico documentation link: https://docs.tigera.io/calico/latest/getting-started/kubernetes/hardway/install-cni-plugin
+#make install directories
+mkdir -p /opt/cni/bin/calico
+mkdir -p /opt/cni/bin/calico-ipam
 
 # Install the CNI plugin binaries for Calico
 curl -L -o /opt/cni/bin/calico https://github.com/projectcalico/cni-plugin/releases/download/v3.25.0/calico-amd64
