@@ -83,6 +83,9 @@ systemctl restart containerd
 # Disable swap
 swapoff -a
 
+# Comment out the swap entry in /etc/fstab, but only if it's not already commented
+sed -i.bak '/^[^#].*\bswap\b/s/^/#/' /etc/fstab
+
 # Set up hostname for the worker node
 # Get the current hostname
 CURRENT_HOSTNAME=$(hostname)
