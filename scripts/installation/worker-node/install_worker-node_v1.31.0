@@ -80,6 +80,77 @@ containerd config default > /etc/containerd/config.toml
 # Restart containerd service
 systemctl restart containerd
 
+# Calico documentation link: https://docs.tigera.io/calico/latest/getting-started/kubernetes/hardway/install-cni-plugin
+
+# Install the CNI plugin binaries for Calico
+curl -L -o /opt/cni/bin/calico https://github.com/projectcalico/cni-plugin/releases/download/v3.14.0/calico-amd64
+chmod 755 /opt/cni/bin/calico
+
+curl -L -o /opt/cni/bin/calico-ipam https://github.com/projectcalico/cni-plugin/releases/download/v3.14.0/calico-ipam-amd64
+chmod 755 /opt/cni/bin/calico-ipam
+
+# Create the config directory for CNI
+mkdir -p /etc/cni/net.d/
+
+# Set up the kubeconfig for Calico CNI and save it in /etc/cni/net.d/
+APISERVER=$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}')
+
+kubectl config set-cluster kubernetes \
+    --certificate-authority=/etc/kubernetes/pki/ca.crt \
+    --embed-certs=true \
+    --server=$APISERVER \
+    --kubeconfig=/etc/cni/net.d/cni.kubeconfig
+
+kubectl config set-credentials calico-cni \
+    --client-certificate=/etc/kubernetes/pki/cni.crt \
+    --client-key=/etc/kubernetes/pki/cni.key \
+    --embed-certs=true \
+    --kubeconfig=/etc/cni/net.d/cni.kubeconfig
+
+kubectl config set-context default \
+    --cluster=kubernetes \
+    --user=calico-cni \
+    --kubeconfig=/etc/cni/net.d/cni.kubeconfig
+
+kubectl config use-context default --kubeconfig=/etc/cni/net.d/cni.kubeconfig
+
+# Copy the cni.kubeconfig file into a file named calico-kubeconfig and change its permissions
+cp /etc/cni/net.d/cni.kubeconfig /etc/cni/net.d/calico-kubeconfig
+chmod 600 /etc/cni/net.d/calico-kubeconfig
+
+# Write the CNI configuration to /etc/cni/net.d/10-calico.conflist
+cat > /etc/cni/net.d/10-calico.conflist <<EOF
+{
+  "name": "k8s-pod-network",
+  "cniVersion": "0.3.1",
+  "plugins": [
+    {
+      "type": "calico",
+      "log_level": "info",
+      "datastore_type": "kubernetes",
+      "mtu": 1500,
+      "ipam": {
+          "type": "calico-ipam"
+      },
+      "policy": {
+          "type": "k8s"
+      },
+      "kubernetes": {
+          "kubeconfig": "/etc/cni/net.d/calico-kubeconfig"
+      }
+    },
+    {
+      "type": "portmap",
+      "snat": true,
+      "capabilities": {"portMappings": true}
+    }
+  ]
+}
+EOF
+
+# Calico CNI plugin installation and configuration completed
+
+
 # Disable swap
 swapoff -a
 
