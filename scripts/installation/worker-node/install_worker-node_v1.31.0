@@ -6,13 +6,16 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
 # WARNING: This script has not been tested and is for TESTING PURPOSES ONLY!
 # Running this script could potentially modify your system configuration or install software.
 # Use at your own risk. Always review scripts before execution, especially in production environments.
 
 # Continue with setup only if the user agrees
 echo "WARNING: This script has not been tested and is for TESTING PURPOSES ONLY!"
-echo "Running this script at this point WILL modify your system configuration, install a lot of software, and potentially fuck up your system."
+echo "Running this script at this point WILL modify your system configuration, install a lot of software, and potentially harm your system."
 echo "Do you wish to continue? (y/n)"
 read -p "" -n 1 -r
 echo    # (optional) move to a new line
@@ -59,7 +62,8 @@ overlay
 br_netfilter
 EOF
 
-modprobe overlay && modprobe br_netfilter
+modprobe overlay || true
+modprobe br_netfilter || true
 
 # Set system parameters
 cat <<EOF | tee /etc/sysctl.d/99-kubernetes-k8s.conf
@@ -83,10 +87,10 @@ systemctl restart containerd
 # Calico documentation link: https://docs.tigera.io/calico/latest/getting-started/kubernetes/hardway/install-cni-plugin
 
 # Install the CNI plugin binaries for Calico
-curl -L -o /opt/cni/bin/calico https://github.com/projectcalico/cni-plugin/releases/download/v3.14.0/calico-amd64
+curl -L -o /opt/cni/bin/calico https://github.com/projectcalico/cni-plugin/releases/download/v3.25.0/calico-amd64
 chmod 755 /opt/cni/bin/calico
 
-curl -L -o /opt/cni/bin/calico-ipam https://github.com/projectcalico/cni-plugin/releases/download/v3.14.0/calico-ipam-amd64
+curl -L -o /opt/cni/bin/calico-ipam https://github.com/projectcalico/cni-plugin/releases/download/v3.25.0/calico-ipam-amd64
 chmod 755 /opt/cni/bin/calico-ipam
 
 # Create the config directory for CNI
@@ -148,9 +152,6 @@ cat > /etc/cni/net.d/10-calico.conflist <<EOF
 }
 EOF
 
-# Calico CNI plugin installation and configuration completed
-
-
 # Disable swap
 swapoff -a
 
@@ -158,10 +159,8 @@ swapoff -a
 sed -i.bak '/^[^#].*\bswap\b/s/^/#/' /etc/fstab
 
 # Set up hostname for the worker node
-# Get the current hostname
 CURRENT_HOSTNAME=$(hostname)
 
-# Display the current hostname
 echo "The current hostname of this server is: $CURRENT_HOSTNAME"
 echo "Do you want to use this hostname? (y/n)"
 read -p "" -n 1 -r
@@ -173,7 +172,6 @@ else
     WORKER_HOSTNAME=$CURRENT_HOSTNAME
 fi
 
-# Set the hostname
 hostnamectl set-hostname "$WORKER_HOSTNAME"
 
 # Ensure net.bridge.bridge-nf-call-iptables is set to 1
@@ -184,41 +182,26 @@ echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
 iptables -P FORWARD ACCEPT
 
 # Add Kubernetes repository
-echo "Adding Kubernetes repository..."
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-# curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list
 
-# Update package list to get the latest versions
 apt update
 
-# Install the fixed stable versions of kubeadm, kubelet, and kubectl
+# Install the stable versions of kubeadm, kubelet, and kubectl
 apt install -y kubeadm=1.31.0-* kubelet=1.31.0-* kubectl=1.31.0-*
 
-# Hold Kubernetes packages to prevent auto-updates
 apt-mark hold kubeadm kubelet kubectl
 
-# Function to get the server's IP address
+# Get the server's IP address
 get_server_ip() {
-    # This function tries to get the non-loopback IP address of the server
-    # Adjust based on your network setup if needed
     local ip=$(ip route get 1 | awk '{print $NF; exit}')
-    
-    # If the above fails, fallback to other methods
     if [ -z "$ip" ]; then
         ip=$(hostname -I | awk '{print $1}')
     fi
-    
-    # If still no IP, prompt user for input
     if [ -z "$ip" ]; then
         echo "Could not determine server IP automatically. Please enter the server's IP address:"
         read -p "Server IP: " ip
-        if [ -z "$ip" ]; then
-            echo "No IP provided. Exiting."
-            exit 1
-        fi
     fi
-    
     echo "$ip"
 }
 
@@ -227,7 +210,6 @@ echo "Enter the join command for this worker node:"
 read -p "Join command: " JOIN_COMMAND
 
 # Join the worker node to the cluster
-echo "Joining the worker node to the cluster..."
 $JOIN_COMMAND
 
 echo "Worker node setup completed. The node should now be part of the Kubernetes cluster."
