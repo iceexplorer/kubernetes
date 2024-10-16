@@ -126,6 +126,26 @@ apt install -y kubeadm=1.31.0-* kubelet=1.31.0-* kubectl=1.31.0-*
 
 apt-mark hold kubeadm kubelet kubectl
 
+# Get the server's IP address
+get_server_ip() {
+    local ip=$(ip route get 1 | awk '{print $NF; exit}')
+    if [ -z "$ip" ]; then
+        ip=$(hostname -I | awk '{print $1}')
+    fi
+    if [ -z "$ip" ]; then
+        echo "Could not determine server IP automatically. Please enter the server's IP address:"
+        read -p "Server IP: " ip
+    fi
+    echo "$ip"
+}
+
+# Ask for the join command
+echo "Enter the join command for this worker node:"
+read -p "Join command: " JOIN_COMMAND
+
+# Join the worker node to the cluster
+$JOIN_COMMAND
+
 # Calico documentation link: https://docs.tigera.io/calico/latest/getting-started/kubernetes/hardway/install-cni-plugin
 #make install directory
 mkdir -p /opt/cni/bin/
@@ -197,24 +217,5 @@ cat > /etc/cni/net.d/10-calico.conflist <<EOF
 }
 EOF
 
-# Get the server's IP address
-get_server_ip() {
-    local ip=$(ip route get 1 | awk '{print $NF; exit}')
-    if [ -z "$ip" ]; then
-        ip=$(hostname -I | awk '{print $1}')
-    fi
-    if [ -z "$ip" ]; then
-        echo "Could not determine server IP automatically. Please enter the server's IP address:"
-        read -p "Server IP: " ip
-    fi
-    echo "$ip"
-}
-
-# Ask for the join command
-echo "Enter the join command for this worker node:"
-read -p "Join command: " JOIN_COMMAND
-
-# Join the worker node to the cluster
-$JOIN_COMMAND
 
 echo "Worker node setup completed. The node should now be part of the Kubernetes cluster."
