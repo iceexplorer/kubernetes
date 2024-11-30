@@ -26,6 +26,23 @@ fi
 apt update
 apt install -y apt-transport-https ca-certificates curl
 
+# Check if ufw is installed, if not, install it
+if ! command -v ufw &> /dev/null; then
+    echo "UFW is not installed. Installing now..."
+    apt install -y ufw
+fi
+
+# Open necessary ports
+ufw allow 22/tcp
+ufw allow 6443/tcp
+ufw allow 10250/tcp
+ufw allow 10251/tcp
+ufw allow 10252/tcp
+ufw allow 30000:32767/tcp
+
+# Ensure UFW is running and enable it
+ufw --force enable
+
 # Disable swap
 swapoff -a
 
