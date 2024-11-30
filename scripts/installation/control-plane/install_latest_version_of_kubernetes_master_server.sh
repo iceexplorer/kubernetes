@@ -26,22 +26,26 @@ fi
 apt update
 apt install -y apt-transport-https ca-certificates curl
 
-# Check if ufw is installed, if not, install it
+# Check if UFW is installed, and install it if missing
 if ! command -v ufw &> /dev/null; then
     echo "UFW is not installed. Installing now..."
     apt install -y ufw
 fi
 
-# Open necessary ports
-ufw allow 22/tcp
-ufw allow 6443/tcp
-ufw allow 10250/tcp
-ufw allow 10251/tcp
-ufw allow 10252/tcp
-ufw allow 30000:32767/tcp
+# Open required ports first
+echo "Configuring UFW rules..."
+REQUIRED_PORTS=("22/tcp" "6443/tcp" "10250/tcp" "10251/tcp" "10252/tcp" "30000:32767/tcp")
+for port in "${REQUIRED_PORTS[@]}"; do
+    ufw allow $port
+done
 
-# Ensure UFW is running and enable it
-ufw --force enable
+# Enable UFW only after ensuring ports are open
+if ! systemctl is-active --quiet ufw; then
+    echo "Enabling UFW..."
+    ufw --force enable
+else
+    echo "UFW is already enabled."
+fi
 
 # Disable swap
 swapoff -a
