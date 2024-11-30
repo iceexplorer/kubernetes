@@ -61,7 +61,7 @@ echo "Do you want to use this hostname? (y/n)"
 read -p "" -n 1 -r
 echo    # (optional) move to a new line
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Enter a custom hostname for this worker node:"
+    echo "Enter a custom hostname for this control-plane:"
     read -p "Hostname: " MASTER_HOSTNAME
 else
     MASTER_HOSTNAME=$CURRENT_HOSTNAME
@@ -120,9 +120,6 @@ apt install -y kubeadm kubelet kubectl
 # Hold Kubernetes packages to prevent auto-updates
 apt-mark hold kubeadm kubelet kubectl
 
-# Set up hostname for the control plane
-hostnamectl set-hostname k8s-control-plane
-
 # Ensure net.bridge.bridge-nf-call-iptables is set to 1
 modprobe br_netfilter
 echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
@@ -157,6 +154,19 @@ get_server_ip() {
 # Initialize the Kubernetes cluster with the latest version
 # Note: The --pod-network-cidr might need adjustment based on your network setup
 SERVER_IP=$(get_server_ip)
+
+# Ask if load balancer will be used
+echo "Do you plan to use a load balancer now or in the future? (y/n)"
+read -p "" -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Please provide load balancer details or configuration when ready."
+else
+    # Add commented-out load balancer configuration for future use
+    echo "Load balancer configuration will be added but not implemented."
+    # Example: kubeadm init --control-plane-endpoint "<load-balancer-ip>:6443" ...
+fi
+
 kubeadm init --apiserver-advertise-address=$SERVER_IP --pod-network-cidr=10.244.0.0/16
 
 # Asking for the configuration path. My wife told me to be polite, and she is pretty with great boobs. That's the only reason why I am asking your opinion ;)
@@ -173,8 +183,15 @@ cp -i /etc/kubernetes/admin.conf "$CONFIG_PATH/config"
 # Install a CNI plugin (e.g., Calico)
 kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
-# Remove the taint on the master node if you want to run pods on it
-kubectl taint nodes --all node-role.kubernetes.io/master-
+# Ask if user wants to use the control plane for pods
+echo "Do you want to run pods on the control-plane node? (y/n)"
+read -p "" -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    kubectl taint nodes --all node-role.kubernetes.io/master-
+else
+    echo "Control-plane node will not be tainted."
+fi
 
 # Output join command for worker nodes
 JOIN_COMMAND=$(kubeadm token create --print-join-command)
