@@ -46,6 +46,25 @@ ufw --force enable
 # Disable swap
 swapoff -a
 
+# Comment out the swap entry in /etc/fstab, but only if it's not already commented
+sed -i.bak '/^[^#].*\bswap\b/s/^/#/' /etc/fstab
+
+# Set up hostname for the control-plane
+CURRENT_HOSTNAME=$(hostname)
+
+echo "The current hostname of this server is: $CURRENT_HOSTNAME"
+echo "Do you want to use this hostname? (y/n)"
+read -p "" -n 1 -r
+echo    # (optional) move to a new line
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Enter a custom hostname for this worker node:"
+    read -p "Hostname: " MASTER_HOSTNAME
+else
+    MASTER_HOSTNAME=$CURRENT_HOSTNAME
+fi
+
+hostnamectl set-hostname "$MASTER_HOSTNAME"
+
 # Add Docker repository and install Docker
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
