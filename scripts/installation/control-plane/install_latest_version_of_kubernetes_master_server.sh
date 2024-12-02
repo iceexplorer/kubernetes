@@ -34,7 +34,7 @@ fi
 
 # Open required ports first
 echo "Configuring UFW rules..."
-REQUIRED_PORTS=("22/tcp" "6443/tcp" "10250/tcp" "10251/tcp" "10252/tcp" "30000:32767/tcp")
+REQUIRED_PORTS=("22/tcp" "6443/tcp" "10250/tcp" "10251/tcp" "10252/tcp" "10255/tcp" "2379/tcp" "2380/tcp" "30000:32767/tcp")
 for port in "${REQUIRED_PORTS[@]}"; do
     ufw allow $port
 done
