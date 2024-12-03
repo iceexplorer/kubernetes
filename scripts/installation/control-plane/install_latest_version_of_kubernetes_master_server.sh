@@ -73,7 +73,20 @@ hostnamectl set-hostname "$MASTER_HOSTNAME"
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 apt update
-apt install -y docker-ce docker-ce-cli
+# Check if Docker is already installed and the version is compatible
+if command -v docker &> /dev/null; then
+    DOCKER_VERSION=$(docker --version | awk '{print $3}' | sed 's/,//')
+    REQUIRED_VERSION="5.0"  # Adjust to the desired Docker version
+    if [[ $(echo -e "$DOCKER_VERSION\n$REQUIRED_VERSION" | sort -V | head -n 1) == "$REQUIRED_VERSION" ]]; then
+        echo "Docker version $DOCKER_VERSION is already installed and compatible. Skipping installation."
+    else
+        echo "Docker version is outdated or incompatible. Installing the latest version."
+        apt install -y docker-ce docker-ce-cli
+    fi
+else
+    echo "Docker not found. Installing the latest version."
+    apt install -y docker-ce docker-ce-cli
+fi
 
 # Start Docker service
 systemctl start docker
