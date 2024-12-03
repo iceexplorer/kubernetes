@@ -152,7 +152,7 @@ get_server_ip() {
 }
 
 # Initialize the Kubernetes cluster with the latest version
-# Note: The --pod-network-cidr might need adjustment based on your network setup
+# Initialize the Kubernetes cluster with the latest version
 SERVER_IP=$(get_server_ip)
 
 # Ask if load balancer will be used
@@ -169,6 +169,23 @@ fi
 
 kubeadm init --apiserver-advertise-address=$SERVER_IP --pod-network-cidr=10.244.0.0/16
 
+# Generate admin kubeconfig for kubectl
+kubeadm init phase kubeconfig admin
+
+# Ensure /var/lib/kubelet exists
+if [ ! -d "/var/lib/kubelet" ]; then
+    echo "/var/lib/kubelet directory is missing, creating it..."
+    mkdir -p /var/lib/kubelet
+    chown -R root:root /var/lib/kubelet
+fi
+
+# Ensure time synchronization
+if ! systemctl is-active --quiet chrony; then
+    echo "Time synchronization is not active. Installing chrony..."
+    apt-get install -y chrony
+    systemctl enable --now chrony
+fi
+
 # Asking for the configuration path.
 echo "Enter the path where you want to store Kubernetes configuration (default is /root/.kube):"
 read -p "Config path: " CONFIG_PATH
@@ -178,7 +195,9 @@ fi
 
 # Configure kubectl for the user
 mkdir -p "$CONFIG_PATH"
+chown $(id -u):$(id -g) "$CONFIG_PATH"
 cp -i /etc/kubernetes/admin.conf "$CONFIG_PATH/config"
+
 
 # Install a CNI plugin (e.g., Calico)
 kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
