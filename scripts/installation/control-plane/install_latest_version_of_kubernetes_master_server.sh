@@ -181,6 +181,7 @@ else
 fi
 
 kubeadm init --apiserver-advertise-address=$SERVER_IP --pod-network-cidr=10.244.0.0/16
+kubeadm init
 
 # Generate admin kubeconfig for kubectl
 kubeadm init phase kubeconfig admin
